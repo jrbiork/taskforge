@@ -39,14 +39,14 @@ export function TaskFilters({
         className="w-64"
       />
       <Select
-        value={statusFilter}
-        onValueChange={(v) => onStatusChange(v as TaskStatus | "")}
+        value={statusFilter || "ALL"}
+        onValueChange={(v) => onStatusChange(v === "ALL" ? "" : (v as TaskStatus))}
       >
         <SelectTrigger className="w-44" aria-label="Filter by status">
           <SelectValue placeholder="All Statuses" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">All Statuses</SelectItem>
+          <SelectItem value="ALL">All Statuses</SelectItem>
           <SelectItem value="TODO">To Do</SelectItem>
           <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
           <SelectItem value="DONE">Done</SelectItem>

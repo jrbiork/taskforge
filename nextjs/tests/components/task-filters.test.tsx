@@ -115,7 +115,7 @@ describe("TaskFilters interactions", () => {
   it("calls onStatusChange with empty string when All Statuses selected", () => {
     render(<TaskFilters {...defaultProps} statusFilter="TODO" />);
     fireEvent.change(screen.getByTestId("status-select"), {
-      target: { value: "" },
+      target: { value: "ALL" },
     });
     expect(defaultProps.onStatusChange).toHaveBeenCalledWith("");
   });
