@@ -7,73 +7,56 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  ADMIN
-  MEMBER
-  VIEWER
-}
-
-enum ProjectStatus {
-  ACTIVE
-  ARCHIVED
-}
-
-enum TaskStatus {
-  TODO
-  IN_PROGRESS
-  DONE
-}
-
-enum Priority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
-}
-
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
   password  String
   name      String
-  role      Role     @default(MEMBER)
+  role      String   @default("MEMBER")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  ownedProjects Project[]
-  assignedTasks Task[]
-  comments      Comment[]
+  ownedProjects  Project[]
+  assignedTasks  Task[]
+  comments       Comment[]
+  notifications  Notification[]
+  activityEvents ActivityEvent[]
 }
 
 model Project {
-  id          String        @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
   description String?
-  status      ProjectStatus @default(ACTIVE)
+  status      String   @default("ACTIVE")
   ownerId     String
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  owner  User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  tasks  Task[]
-  labels Label[]
+  owner          User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  tasks          Task[]
+  labels         Label[]
+  notifications  Notification[]
+  activityEvents ActivityEvent[]
 }
 
 model Task {
-  id          String     @id @default(cuid())
+  id          String   @id @default(cuid())
   title       String
   description String?
-  status      TaskStatus @default(TODO)
-  priority    Priority   @default(MEDIUM)
+  status      String   @default("TODO")
+  priority    String   @default("MEDIUM")
   projectId   String
   assigneeId  String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  assignee   User?       @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
-  comments   Comment[]
-  taskLabels TaskLabel[]
+  project       Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee      User?            @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
+  comments      Comment[]
+  taskLabels    TaskLabel[]
+  notifications Notification[]
+  dependencies  TaskDependency[] @relation("TaskDependencies")
+  dependents    TaskDependency[] @relation("TaskPrerequisites")
 }
 
 model Comment {
@@ -107,4 +90,45 @@ model TaskLabel {
   label Label @relation(fields: [labelId], references: [id], onDelete: Cascade)
 
   @@id([taskId, labelId])
+}
+
+model TaskDependency {
+  id          String   @id @default(cuid())
+  taskId      String
+  dependsOnId String
+  createdAt   DateTime @default(now())
+
+  task      Task @relation("TaskDependencies", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOn Task @relation("TaskPrerequisites", fields: [dependsOnId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, dependsOnId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  message   String
+  read      Boolean  @default(false)
+  taskId    String?
+  projectId String?
+  createdAt DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task    Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+}
+
+model ActivityEvent {
+  id         String   @id @default(cuid())
+  projectId  String
+  actorId    String
+  action     String
+  entityId   String
+  entityType String
+  metadata   String?
+  createdAt  DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  actor   User    @relation(fields: [actorId], references: [id], onDelete: Cascade)
 }
