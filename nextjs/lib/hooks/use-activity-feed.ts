@@ -13,7 +13,7 @@ export interface ActivityFeedState {
   refetch: () => Promise<void>;
 }
 
-export function useActivityFeed(projectId: string): ActivityFeedState {
+export function useActivityFeed(projectId: string, refreshTrigger = 0): ActivityFeedState {
   const [events, setEvents] = useState<ActivityEventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +28,7 @@ export function useActivityFeed(projectId: string): ActivityFeedState {
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, refreshTrigger]);
 
   useEffect(() => {
     fetchActivity();

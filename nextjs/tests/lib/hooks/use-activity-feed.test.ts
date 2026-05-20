@@ -119,4 +119,16 @@ describe("useActivityFeed", () => {
     rerender({ id: "proj-2" });
     await waitFor(() => expect(mockGetActivity).toHaveBeenCalledWith("proj-2"));
   });
+
+  it("re-fetches immediately when refreshTrigger increments", async () => {
+    mockGetActivity.mockResolvedValue({ events: [] });
+    const { rerender } = renderHook(
+      ({ trigger }) => useActivityFeed("proj-1", trigger),
+      { initialProps: { trigger: 0 } }
+    );
+    await waitFor(() => expect(mockGetActivity).toHaveBeenCalledTimes(1));
+
+    rerender({ trigger: 1 });
+    await waitFor(() => expect(mockGetActivity).toHaveBeenCalledTimes(2));
+  });
 });

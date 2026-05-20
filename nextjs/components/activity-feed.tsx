@@ -16,10 +16,11 @@ function formatRelativeTime(date: Date | string): string {
 
 interface ActivityFeedProps {
   projectId: string;
+  refreshTrigger?: number;
 }
 
-export function ActivityFeed({ projectId }: ActivityFeedProps) {
-  const { events, loading, error } = useActivityFeed(projectId);
+export function ActivityFeed({ projectId, refreshTrigger = 0 }: ActivityFeedProps) {
+  const { events, loading, error } = useActivityFeed(projectId, refreshTrigger);
 
   return (
     <section className="rounded-lg border bg-card p-4">

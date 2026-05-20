@@ -17,6 +17,7 @@ export default function ProjectDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [activityTick, setActivityTick] = useState(0);
 
   useEffect(() => {
     fetchProject();
@@ -90,6 +91,7 @@ export default function ProjectDetailPage() {
                 onSuccess={() => {
                   setIsDialogOpen(false);
                   fetchProject();
+                  setActivityTick((t) => t + 1);
                 }}
               />
             </DialogContent>
@@ -100,7 +102,7 @@ export default function ProjectDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
         <TaskBoard tasks={project.tasks} projectId={params.id as string} />
         <aside>
-          <ActivityFeed projectId={params.id as string} />
+          <ActivityFeed projectId={params.id as string} refreshTrigger={activityTick} />
         </aside>
       </div>
     </div>
