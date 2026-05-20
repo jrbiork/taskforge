@@ -3,6 +3,11 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { notifyTaskAssigned, notifyTaskCompleted } from "@/lib/notifications";
+import { emitTaskStatusChanged, emitTaskAssigned, emitTaskDeleted } from "@/lib/activity";
+import { Session } from "next-auth";
+
+type AuthSession = Session & { user: { id: string } };
 
 const taskUpdateSchema = z.object({
   title: z.string().min(1).optional(),
@@ -17,7 +22,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as AuthSession | null;
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -55,6 +60,16 @@ export async function GET(
             createdAt: "asc",
           },
         },
+        dependencies: {
+          include: {
+            dependsOn: { select: { id: true, title: true, status: true } },
+          },
+        },
+        dependents: {
+          include: {
+            task: { select: { id: true, title: true, status: true } },
+          },
+        },
       },
     });
 
@@ -76,7 +91,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as AuthSession | null;
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -88,6 +103,7 @@ export async function PATCH(
 
     const task = await prisma.task.findUnique({
       where: { id },
+      include: { project: { select: { ownerId: true } } },
     });
 
     if (!task) {
@@ -114,6 +130,36 @@ export async function PATCH(
       },
     });
 
+    if (data.assigneeId && data.assigneeId !== task.assigneeId) {
+      await notifyTaskAssigned(
+        task.id,
+        task.title,
+        task.projectId,
+        data.assigneeId,
+        session.user.id
+      );
+    }
+
+    if (data.status === "DONE" && task.status !== "DONE") {
+      await notifyTaskCompleted(
+        task.id,
+        task.title,
+        task.projectId,
+        task.assigneeId,
+        task.project.ownerId,
+        session.user.id
+      );
+    }
+
+    if (data.status !== undefined && data.status !== task.status) {
+      await emitTaskStatusChanged(task.projectId, session.user.id, task.id, task.title, task.status, data.status);
+    }
+
+    if ("assigneeId" in data && data.assigneeId !== undefined && data.assigneeId !== task.assigneeId) {
+      const assigneeName = updatedTask.assignee?.name ?? null;
+      await emitTaskAssigned(task.projectId, session.user.id, task.id, task.title, assigneeName);
+    }
+
     return NextResponse.json(updatedTask);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -132,7 +178,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as AuthSession | null;
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -151,6 +197,8 @@ export async function DELETE(
     await prisma.task.delete({
       where: { id },
     });
+
+    await emitTaskDeleted(task.projectId, session.user.id, task.id, task.title);
 
     return NextResponse.json({ success: true });
   } catch (error) {

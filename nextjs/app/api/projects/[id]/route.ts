@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { emitProjectUpdated } from "@/lib/activity";
 
 const projectUpdateSchema = z.object({
   name: z.string().min(1).optional(),
@@ -40,6 +41,11 @@ export async function GET(
                 id: true,
                 name: true,
                 email: true,
+              },
+            },
+            dependencies: {
+              include: {
+                dependsOn: { select: { id: true, title: true, status: true } },
               },
             },
           },
@@ -104,6 +110,8 @@ export async function PATCH(
         },
       },
     });
+
+    await emitProjectUpdated(id, (session.user as { id: string }).id, Object.keys(data));
 
     return NextResponse.json(updatedProject);
   } catch (error) {
