@@ -41,6 +41,7 @@ export type NotificationItem = Notification & {
 
 export type ActivityAction =
   | "TASK_CREATED"
+  | "TASK_UPDATED"
   | "TASK_STATUS_CHANGED"
   | "TASK_ASSIGNED"
   | "TASK_DELETED"
@@ -54,12 +55,14 @@ export type TaskAssignedMetadata = { assigneeName: string | null; taskTitle: str
 export type TaskCreatedMetadata = { taskTitle: string };
 export type TaskDeletedMetadata = { taskTitle: string };
 export type CommentAddedMetadata = { taskTitle: string; commentPreview: string };
+export type TaskUpdatedMetadata = { taskTitle: string; changedFields: string[] };
 export type ProjectUpdatedMetadata = { changedFields: string[] };
 
 export type ActivityMetadata =
   | TaskStatusChangedMetadata
   | TaskAssignedMetadata
   | TaskCreatedMetadata
+  | TaskUpdatedMetadata
   | TaskDeletedMetadata
   | CommentAddedMetadata
   | ProjectUpdatedMetadata;

@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { notifyTaskAssigned, notifyTaskCompleted } from "@/lib/notifications";
-import { emitTaskStatusChanged, emitTaskAssigned, emitTaskDeleted } from "@/lib/activity";
+import { emitTaskStatusChanged, emitTaskAssigned, emitTaskUpdated, emitTaskDeleted } from "@/lib/activity";
 import { Session } from "next-auth";
 
 type AuthSession = Session & { user: { id: string } };
@@ -158,6 +158,11 @@ export async function PATCH(
     if ("assigneeId" in data && data.assigneeId !== undefined && data.assigneeId !== task.assigneeId) {
       const assigneeName = updatedTask.assignee?.name ?? null;
       await emitTaskAssigned(task.projectId, session.user.id, task.id, task.title, assigneeName);
+    }
+
+    const genericFields = Object.keys(data).filter((k) => k !== "status" && k !== "assigneeId");
+    if (genericFields.length > 0) {
+      await emitTaskUpdated(task.projectId, session.user.id, task.id, task.title, genericFields);
     }
 
     return NextResponse.json(updatedTask);

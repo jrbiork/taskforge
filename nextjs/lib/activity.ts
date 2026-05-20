@@ -7,6 +7,7 @@ import type {
   TaskStatusChangedMetadata,
   TaskAssignedMetadata,
   TaskCreatedMetadata,
+  TaskUpdatedMetadata,
   TaskDeletedMetadata,
   CommentAddedMetadata,
   ProjectUpdatedMetadata,
@@ -72,6 +73,21 @@ export async function emitTaskAssigned(
   try {
     const metadata: TaskAssignedMetadata = { assigneeName, taskTitle };
     await emitActivity({ projectId, actorId, action: "TASK_ASSIGNED", entityId: taskId, entityType: "TASK", metadata });
+  } catch {
+    // Side-effect must not break the primary response
+  }
+}
+
+export async function emitTaskUpdated(
+  projectId: string,
+  actorId: string,
+  taskId: string,
+  taskTitle: string,
+  changedFields: string[]
+): Promise<void> {
+  try {
+    const metadata: TaskUpdatedMetadata = { taskTitle, changedFields };
+    await emitActivity({ projectId, actorId, action: "TASK_UPDATED", entityId: taskId, entityType: "TASK", metadata });
   } catch {
     // Side-effect must not break the primary response
   }
@@ -162,6 +178,14 @@ export function formatActivityDescription(event: ActivityEventItem): string {
       return meta.assigneeName
         ? `${actor} assigned "${meta.taskTitle ?? "unknown"}" to ${meta.assigneeName}`
         : `${actor} unassigned "${meta.taskTitle ?? "unknown"}"`;
+    case "TASK_UPDATED": {
+      const fields = Array.isArray(meta.changedFields) && meta.changedFields.length > 0
+        ? (meta.changedFields as string[]).join(", ")
+        : null;
+      return fields
+        ? `${actor} updated "${meta.taskTitle ?? "unknown"}" (${fields})`
+        : `${actor} updated "${meta.taskTitle ?? "unknown"}"`;
+    }
     case "TASK_DELETED":
       return `${actor} deleted task "${meta.taskTitle ?? "unknown"}"`;
     case "COMMENT_ADDED":

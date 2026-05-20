@@ -12,6 +12,7 @@ import {
   emitTaskCreated,
   emitTaskStatusChanged,
   emitTaskAssigned,
+  emitTaskUpdated,
   emitTaskDeleted,
   emitCommentAdded,
   emitProjectUpdated,
@@ -101,6 +102,23 @@ describe("emitTaskAssigned", () => {
     await emitTaskAssigned("proj-1", "user-1", "task-1", "Fix login", "Dave");
     const meta = JSON.parse(mockCreate.mock.calls[0][0].data.metadata);
     expect(meta.assigneeName).toBe("Dave");
+  });
+});
+
+describe("emitTaskUpdated", () => {
+  it("uses TASK_UPDATED action with changedFields in metadata", async () => {
+    mockCreate.mockResolvedValue({});
+    await emitTaskUpdated("proj-1", "user-1", "task-1", "Fix login", ["priority"]);
+    const call = mockCreate.mock.calls[0][0];
+    expect(call.data.action).toBe("TASK_UPDATED");
+    const meta = JSON.parse(call.data.metadata);
+    expect(meta.changedFields).toEqual(["priority"]);
+    expect(meta.taskTitle).toBe("Fix login");
+  });
+
+  it("does not throw when DB rejects", async () => {
+    mockCreate.mockRejectedValue(new Error("DB error"));
+    await expect(emitTaskUpdated("proj-1", "user-1", "task-1", "Fix login", ["title"])).resolves.toBeUndefined();
   });
 });
 
@@ -204,6 +222,24 @@ describe("formatActivityDescription", () => {
       metadata: JSON.stringify({ taskTitle: "Fix login", assigneeName: null }),
     });
     expect(formatActivityDescription(event)).toContain("unassigned");
+  });
+
+  it("TASK_UPDATED with fields includes them in description", () => {
+    const event = makeEvent({
+      action: "TASK_UPDATED",
+      metadata: JSON.stringify({ taskTitle: "Fix login", changedFields: ["priority"] }),
+    });
+    const desc = formatActivityDescription(event);
+    expect(desc).toContain("priority");
+    expect(desc).toContain("Fix login");
+  });
+
+  it("TASK_UPDATED with empty fields uses generic text", () => {
+    const event = makeEvent({
+      action: "TASK_UPDATED",
+      metadata: JSON.stringify({ taskTitle: "Fix login", changedFields: [] }),
+    });
+    expect(formatActivityDescription(event)).toContain("updated");
   });
 
   it("TASK_DELETED includes task title", () => {
