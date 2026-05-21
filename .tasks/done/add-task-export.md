@@ -7,11 +7,11 @@ Add CSV export for tasks in the task board view.
 Users need a way to export task data for reporting and offline use.
 
 ## Acceptance Criteria
-- [ ] Export utility converts TaskForBoard[] to a downloadable CSV
-- [ ] Empty task list shows user-facing message instead of downloading empty file
-- [ ] Export button visible in TaskBoard, right-aligned in the filter bar
-- [ ] Tests cover export logic at ≥99.9% coverage
-- [ ] Documentation updated
+- [x] Export utility converts TaskForBoard[] to a downloadable CSV
+- [x] Empty task list shows user-facing message instead of downloading empty file
+- [x] Export button visible in TaskBoard, right-aligned in the filter bar
+- [x] Tests cover export logic at ≥99.9% coverage
+- [x] Documentation updated
 
 ## Notes
 - No new npm dependencies; use browser Blob API
