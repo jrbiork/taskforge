@@ -4,12 +4,16 @@ import { useState } from "react";
 import { Task, User } from "@prisma/client";
 import { TaskCard } from "./task-card";
 import { TaskFilters } from "./task-filters";
+import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
-import { TaskStatus } from "@/lib/types";
+import { Download } from "lucide-react";
+import { TaskStatus, SortBy, Priority, DependencyWithPrerequisite } from "@/lib/types";
+import { exportTasksToCSV } from "@/lib/export";
 
 interface TaskBoardProps {
   tasks: (Task & {
     assignee: Pick<User, "id" | "name" | "email"> | null;
+    dependencies?: DependencyWithPrerequisite[];
   })[];
   projectId: string;
 }
@@ -21,14 +25,30 @@ export function TaskBoard({ tasks, projectId }: TaskBoardProps) {
 
   const searchQuery = searchParams.get("q") ?? "";
   const statusFilter = (searchParams.get("status") ?? "") as TaskStatus | "";
+  const sortBy = (searchParams.get("sort") ?? "default") as SortBy;
 
-  const filteredTasks = tasks.filter((task) => {
-    const matchesSearch =
-      searchQuery === "" ||
-      task.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "" || task.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const PRIORITY_WEIGHT: Record<Priority, number> = {
+    URGENT: 4,
+    HIGH: 3,
+    MEDIUM: 2,
+    LOW: 1,
+  };
+
+  const filteredTasks = tasks
+    .filter((task) => {
+      const matchesSearch =
+        searchQuery === "" ||
+        task.title.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = statusFilter === "" || task.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      if (sortBy !== "priority") return 0;
+      return (
+        PRIORITY_WEIGHT[b.priority as Priority] -
+        PRIORITY_WEIGHT[a.priority as Priority]
+      );
+    });
 
   const todoTasks = filteredTasks.filter((t) => t.status === "TODO");
   const inProgressTasks = filteredTasks.filter((t) => t.status === "IN_PROGRESS");
@@ -58,17 +78,42 @@ export function TaskBoard({ tasks, projectId }: TaskBoardProps) {
     router.replace(`?${params.toString()}`, { scroll: false });
   };
 
+  const handleSortChange = (value: SortBy) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value !== "default") {
+      params.set("sort", value);
+    } else {
+      params.delete("sort");
+    }
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
+
   const handleClear = () => router.replace("?", { scroll: false });
 
   return (
     <div>
-      <TaskFilters
-        searchQuery={searchQuery}
-        statusFilter={statusFilter}
-        onSearchChange={handleSearchChange}
-        onStatusChange={handleStatusChange}
-        onClear={handleClear}
-      />
+      <div className="flex flex-wrap items-start gap-3 mb-6">
+        <TaskFilters
+          searchQuery={searchQuery}
+          statusFilter={statusFilter}
+          sortBy={sortBy}
+          onSearchChange={handleSearchChange}
+          onStatusChange={handleStatusChange}
+          onSortChange={handleSortChange}
+          onClear={handleClear}
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          className="ml-auto"
+          onClick={() =>
+            exportTasksToCSV(filteredTasks, `tasks-${projectId}.csv`)
+          }
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Export CSV
+        </Button>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div>
         <div className="mb-4">

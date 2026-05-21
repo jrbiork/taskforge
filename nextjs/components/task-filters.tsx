@@ -9,27 +9,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TaskStatus } from "@/lib/types";
+import { TaskStatus, SortBy } from "@/lib/types";
 
 interface TaskFiltersProps {
   searchQuery: string;
   statusFilter: TaskStatus | "";
+  sortBy: SortBy;
   onSearchChange: (value: string) => void;
   onStatusChange: (value: TaskStatus | "") => void;
+  onSortChange: (value: SortBy) => void;
   onClear: () => void;
 }
 
 export function TaskFilters({
   searchQuery,
   statusFilter,
+  sortBy,
   onSearchChange,
   onStatusChange,
+  onSortChange,
   onClear,
 }: TaskFiltersProps) {
-  const hasActiveFilters = searchQuery !== "" || statusFilter !== "";
+  const hasActiveFilters = searchQuery !== "" || statusFilter !== "" || sortBy !== "default";
 
   return (
-    <div className="flex flex-wrap gap-3 mb-6 items-center">
+    <div className="flex flex-wrap gap-3 items-center">
       <Input
         type="text"
         aria-label="Search tasks"
@@ -50,6 +54,18 @@ export function TaskFilters({
           <SelectItem value="TODO">To Do</SelectItem>
           <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
           <SelectItem value="DONE">Done</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select
+        value={sortBy}
+        onValueChange={(v) => onSortChange(v as SortBy)}
+      >
+        <SelectTrigger className="w-44" aria-label="Sort tasks">
+          <SelectValue placeholder="Sort by" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="default">Default order</SelectItem>
+          <SelectItem value="priority">Sort by priority</SelectItem>
         </SelectContent>
       </Select>
       {hasActiveFilters && (
