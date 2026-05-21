@@ -131,4 +131,112 @@ describe("useActivityFeed", () => {
     rerender({ trigger: 1 });
     await waitFor(() => expect(mockGetActivity).toHaveBeenCalledTimes(2));
   });
+
+  it("exposes a refetch function that re-fetches data", async () => {
+    const events = [makeEvent()];
+    mockGetActivity.mockResolvedValue({ events });
+    const { result } = renderHook(() => useActivityFeed("proj-1"));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      await result.current.refetch();
+    });
+
+    expect(mockGetActivity).toHaveBeenCalledTimes(2);
+    expect(result.current.events).toEqual(events);
+  });
+
+  it("does not reset loading to true on subsequent refetches", async () => {
+    mockGetActivity.mockResolvedValue({ events: [] });
+    const { result } = renderHook(() => useActivityFeed("proj-1"));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      await result.current.refetch();
+    });
+
+    expect(result.current.loading).toBe(false);
+  });
+
+  it("clears a previous error when a subsequent fetch succeeds", async () => {
+    mockGetActivity.mockRejectedValueOnce(new Error("Network error"));
+    const { result } = renderHook(() => useActivityFeed("proj-1"));
+    await waitFor(() => expect(result.current.error).toBe("Network error"));
+
+    const events = [makeEvent()];
+    mockGetActivity.mockResolvedValue({ events });
+    await act(async () => {
+      await result.current.refetch();
+    });
+
+    expect(result.current.error).toBeNull();
+    expect(result.current.events).toEqual(events);
+  });
+
+  it("replaces events on each fetch rather than appending", async () => {
+    const first = [makeEvent("evt-1")];
+    const second = [makeEvent("evt-2"), makeEvent("evt-3")];
+    mockGetActivity.mockResolvedValueOnce({ events: first });
+    const { result } = renderHook(() => useActivityFeed("proj-1"));
+    await waitFor(() => expect(result.current.events).toEqual(first));
+
+    mockGetActivity.mockResolvedValueOnce({ events: second });
+    await act(async () => {
+      await result.current.refetch();
+    });
+
+    expect(result.current.events).toEqual(second);
+    expect(result.current.events).toHaveLength(2);
+  });
+
+  it("polls multiple times as the interval fires repeatedly", async () => {
+    mockGetActivity.mockResolvedValue({ events: [] });
+    renderHook(() => useActivityFeed("proj-1"));
+    await waitFor(() => expect(mockGetActivity).toHaveBeenCalledTimes(1));
+
+    act(() => { jest.advanceTimersByTime(30_000); });
+    await waitFor(() => expect(mockGetActivity).toHaveBeenCalledTimes(2));
+
+    act(() => { jest.advanceTimersByTime(30_000); });
+    await waitFor(() => expect(mockGetActivity).toHaveBeenCalledTimes(3));
+  });
+
+  it("does not refetch on visibilitychange when tab remains hidden", async () => {
+    mockGetActivity.mockResolvedValue({ events: [] });
+    Object.defineProperty(document, "hidden", { configurable: true, value: true });
+    renderHook(() => useActivityFeed("proj-1"));
+    await waitFor(() => expect(mockGetActivity).toHaveBeenCalledTimes(1));
+
+    act(() => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+
+    expect(mockGetActivity).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears the polling interval on unmount so no further polls fire", async () => {
+    mockGetActivity.mockResolvedValue({ events: [] });
+    const { unmount } = renderHook(() => useActivityFeed("proj-1"));
+    await waitFor(() => expect(mockGetActivity).toHaveBeenCalledTimes(1));
+
+    unmount();
+
+    act(() => { jest.advanceTimersByTime(30_000); });
+    expect(mockGetActivity).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns loading true and empty events before first fetch resolves", () => {
+    mockGetActivity.mockReturnValue(new Promise(() => {}));
+    const { result } = renderHook(() => useActivityFeed("proj-1"));
+    expect(result.current.events).toEqual([]);
+    expect(result.current.error).toBeNull();
+    expect(result.current.loading).toBe(true);
+  });
+
+  it("error is null on initial successful fetch", async () => {
+    mockGetActivity.mockResolvedValue({ events: [] });
+    const { result } = renderHook(() => useActivityFeed("proj-1"));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.error).toBeNull();
+  });
 });
