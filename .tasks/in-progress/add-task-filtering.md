@@ -213,3 +213,7 @@ npm test                                                      # full suite, no r
 - [ ] Clear removes params and restores all tasks
 - [ ] Hard-refresh with params pre-applies filters
 - [ ] Network tab: zero extra API calls when filtering
+
+## GitHub Issue
+
+https://github.com/jrbiork/taskforge/issues/2
