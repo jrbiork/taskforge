@@ -12,11 +12,19 @@ router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 @router.get("", response_model=list[Task])
 def list_tasks(
     project_id: int | None = Query(None),
+    sort_by: str | None = Query(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """List all tasks, optionally filtered by project_id"""
-    return get_tasks(db, current_user, project_id)
+    """List all tasks, optionally filtered by project_id.
+
+    Returns:
+        - 200: List of tasks (may be empty)
+        - 401: Unauthorized
+        - 404: Project not found (if project_id provided)
+        - 403: Access denied to project (if project_id provided)
+    """
+    return get_tasks(db, current_user, project_id, sort_by)
 
 
 @router.post("", response_model=Task, status_code=status.HTTP_201_CREATED)
@@ -25,7 +33,15 @@ def create_new_task(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Create a new task"""
+    """Create a new task.
+
+    Returns:
+        - 201: Task created successfully
+        - 400: Invalid input data
+        - 401: Unauthorized
+        - 403: Access denied to project
+        - 404: Project or assignee not found
+    """
     return create_task(db, task_data, current_user)
 
 
@@ -33,7 +49,13 @@ def create_new_task(
 def get_task_by_id(
     task_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
-    """Get a specific task"""
+    """Get a specific task by ID.
+
+    Returns:
+        - 200: Task retrieved successfully
+        - 401: Unauthorized
+        - 404: Task not found or access denied
+    """
     return get_task(db, task_id, current_user)
 
 
@@ -44,7 +66,14 @@ def update_task_by_id(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Update a task"""
+    """Update a task.
+
+    Returns:
+        - 200: Task updated successfully
+        - 400: Invalid input data
+        - 401: Unauthorized
+        - 404: Task not found or assignee not found
+    """
     return update_task(db, task_id, task_data, current_user)
 
 
@@ -52,6 +81,12 @@ def update_task_by_id(
 def delete_task_by_id(
     task_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
-    """Delete a task"""
+    """Delete a task.
+
+    Returns:
+        - 204: Task deleted successfully
+        - 401: Unauthorized
+        - 404: Task not found or access denied
+    """
     delete_task(db, task_id, current_user)
     return None

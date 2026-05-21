@@ -9,6 +9,7 @@ from app.services.project_service import (
     create_project,
     update_project,
     delete_project,
+    get_labels,
 )
 from app.utils.security import get_current_user
 from app.models.user import User
@@ -63,19 +64,15 @@ def delete_project_by_id(
     return None
 
 
-# Intentional inconsistency: inline logic instead of service layer
 @router.get("/{project_id}/labels", response_model=list[Label])
 def get_project_labels(
     project_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """Get labels for a project"""
-    # Inline check without service layer
-    project = get_project(db, project_id, current_user)
-    labels = db.query(LabelModel).filter(LabelModel.project_id == project_id).all()
-    return labels
+    get_project(db, project_id, current_user)
+    return get_labels(db, project_id)
 
 
-# Intentional inconsistency: minimal validation
 @router.post("/{project_id}/labels", response_model=Label, status_code=status.HTTP_201_CREATED)
 def create_project_label(
     project_id: int,
@@ -84,7 +81,7 @@ def create_project_label(
     db: Session = Depends(get_db),
 ):
     """Create a label for a project"""
-    # Missing proper ownership check
+    get_project(db, project_id, current_user)
     label = LabelModel(**label_data.model_dump(), project_id=project_id)
     db.add(label)
     db.commit()

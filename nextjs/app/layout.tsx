@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import NotificationBell from "@/components/notification-bell";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -40,6 +41,7 @@ export default async function RootLayout({
                   <span className="text-sm text-muted-foreground">
                     {session.user?.name}
                   </span>
+                  <NotificationBell />
                   <form action="/api/auth/signout" method="POST">
                     <Button variant="outline" size="sm" type="submit">
                       Sign Out

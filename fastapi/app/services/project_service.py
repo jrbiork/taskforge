@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from app.models.project import Project
+from app.models.label import Label
 from app.models.user import User
 from app.schemas.project import ProjectCreate, ProjectUpdate
 from app.utils.exceptions import NotFoundException, ForbiddenException
@@ -47,3 +48,8 @@ def delete_project(db: Session, project_id: int, user: User) -> None:
     project = get_project(db, project_id, user)
     db.delete(project)
     db.commit()
+
+
+def get_labels(db: Session, project_id: int) -> list[Label]:
+    """Get all labels for a project"""
+    return db.query(Label).filter(Label.project_id == project_id).all()
