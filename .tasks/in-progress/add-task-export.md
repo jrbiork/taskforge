@@ -25,3 +25,5 @@ Users need a way to export task data for reporting and offline use.
 4. Update CHANGELOG.md
 
 ## Progress Log
+
+- 2026-05-21: Implementation complete — export utility, UI button, 15 unit tests, changelog updated
