@@ -106,6 +106,8 @@ export function TaskBoard({ tasks, projectId }: TaskBoardProps) {
           variant="outline"
           size="sm"
           className="ml-auto"
+          disabled={filteredTasks.length === 0}
+          title={filteredTasks.length === 0 ? "No tasks to export" : undefined}
           onClick={() =>
             exportTasksToCSV(filteredTasks, `tasks-${projectId}.csv`)
           }
