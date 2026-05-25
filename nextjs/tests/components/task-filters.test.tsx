@@ -2,7 +2,6 @@ import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 jest.mock("@/components/ui/select", () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const React = require("react");
 
   return {

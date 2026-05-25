@@ -1,6 +1,6 @@
-import { User, Project, Task, Comment, Label, Notification, TaskDependency, ActivityEvent } from "@prisma/client";
+import { User, Project, Task, Comment, Label, Notification, TaskDependency, ActivityEvent, TimeEntry } from "@prisma/client";
 
-export type { User, Project, Task, Comment, Label, Notification, TaskDependency, ActivityEvent };
+export type { User, Project, Task, Comment, Label, Notification, TaskDependency, ActivityEvent, TimeEntry };
 
 export type Role = "ADMIN" | "MEMBER" | "VIEWER";
 export type ProjectStatus = "ACTIVE" | "ARCHIVED";
@@ -28,6 +28,7 @@ export type TaskWithDetails = Task & {
 export type TaskForBoard = Task & {
   assignee: Pick<User, "id" | "name" | "email"> | null;
   dependencies: DependencyWithPrerequisite[];
+  totalMinutes?: number;
 };
 
 export type ProjectWithTasks = Project & {
@@ -39,6 +40,16 @@ export type NotificationItem = Notification & {
   task?: { id: string; title: string } | null;
 };
 
+export type TimeEntryWithUser = TimeEntry & {
+  user: Pick<User, "id" | "name"> | null;
+};
+
+export type TimeReportRow = {
+  taskId: string;
+  userId: string | null;
+  totalMinutes: bigint | number;
+};
+
 export type ActivityAction =
   | "TASK_CREATED"
   | "TASK_UPDATED"
@@ -46,9 +57,12 @@ export type ActivityAction =
   | "TASK_ASSIGNED"
   | "TASK_DELETED"
   | "COMMENT_ADDED"
-  | "PROJECT_UPDATED";
+  | "PROJECT_UPDATED"
+  | "TIME_ENTRY_CREATED"
+  | "TIME_ENTRY_UPDATED"
+  | "TIME_ENTRY_DELETED";
 
-export type ActivityEntityType = "TASK" | "COMMENT" | "PROJECT";
+export type ActivityEntityType = "TASK" | "COMMENT" | "PROJECT" | "TIME_ENTRY";
 
 export type TaskStatusChangedMetadata = { oldStatus: string; newStatus: string; taskTitle: string };
 export type TaskAssignedMetadata = { assigneeName: string | null; taskTitle: string };
@@ -58,6 +72,10 @@ export type CommentAddedMetadata = { taskTitle: string; commentPreview: string }
 export type TaskUpdatedMetadata = { taskTitle: string; changedFields: string[] };
 export type ProjectUpdatedMetadata = { changedFields: string[] };
 
+export type TimeEntryAddedMetadata = { taskTitle: string; minutes: number };
+export type TimeEntryUpdatedMetadata = { taskTitle: string; minutes: number };
+export type TimeEntryDeletedMetadata = { taskTitle: string };
+
 export type ActivityMetadata =
   | TaskStatusChangedMetadata
   | TaskAssignedMetadata
@@ -65,7 +83,10 @@ export type ActivityMetadata =
   | TaskUpdatedMetadata
   | TaskDeletedMetadata
   | CommentAddedMetadata
-  | ProjectUpdatedMetadata;
+  | ProjectUpdatedMetadata
+  | TimeEntryAddedMetadata
+  | TimeEntryUpdatedMetadata
+  | TimeEntryDeletedMetadata;
 
 export type ActivityEventItem = ActivityEvent & {
   actor: Pick<User, "id" | "name" | "email">;

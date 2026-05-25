@@ -11,6 +11,9 @@ import type {
   TaskDeletedMetadata,
   CommentAddedMetadata,
   ProjectUpdatedMetadata,
+  TimeEntryAddedMetadata,
+  TimeEntryUpdatedMetadata,
+  TimeEntryDeletedMetadata,
 } from "@/lib/types";
 
 async function emitActivity(params: {
@@ -138,6 +141,50 @@ export async function emitProjectUpdated(
   }
 }
 
+export async function emitTimeEntryAdded(
+  projectId: string,
+  actorId: string,
+  entryId: string,
+  taskTitle: string,
+  minutes: number
+): Promise<void> {
+  try {
+    const metadata: TimeEntryAddedMetadata = { taskTitle, minutes };
+    await emitActivity({ projectId, actorId, action: "TIME_ENTRY_CREATED", entityId: entryId, entityType: "TIME_ENTRY", metadata });
+  } catch {
+    // Side-effect must not break the primary response
+  }
+}
+
+export async function emitTimeEntryUpdated(
+  projectId: string,
+  actorId: string,
+  entryId: string,
+  taskTitle: string,
+  minutes: number
+): Promise<void> {
+  try {
+    const metadata: TimeEntryUpdatedMetadata = { taskTitle, minutes };
+    await emitActivity({ projectId, actorId, action: "TIME_ENTRY_UPDATED", entityId: entryId, entityType: "TIME_ENTRY", metadata });
+  } catch {
+    // Side-effect must not break the primary response
+  }
+}
+
+export async function emitTimeEntryDeleted(
+  projectId: string,
+  actorId: string,
+  entryId: string,
+  taskTitle: string
+): Promise<void> {
+  try {
+    const metadata: TimeEntryDeletedMetadata = { taskTitle };
+    await emitActivity({ projectId, actorId, action: "TIME_ENTRY_DELETED", entityId: entryId, entityType: "TIME_ENTRY", metadata });
+  } catch {
+    // Side-effect must not break the primary response
+  }
+}
+
 export async function getProjectActivity(
   projectId: string,
   limit = 50
@@ -196,6 +243,12 @@ export function formatActivityDescription(event: ActivityEventItem): string {
         : null;
       return fields ? `${actor} updated project (${fields})` : `${actor} updated project settings`;
     }
+    case "TIME_ENTRY_CREATED":
+      return `${actor} logged time on "${meta.taskTitle ?? "unknown"}"`;
+    case "TIME_ENTRY_UPDATED":
+      return `${actor} updated a time entry on "${meta.taskTitle ?? "unknown"}"`;
+    case "TIME_ENTRY_DELETED":
+      return `${actor} deleted a time entry on "${meta.taskTitle ?? "unknown"}"`;
     default:
       return `${actor} performed an action`;
   }

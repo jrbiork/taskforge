@@ -31,7 +31,6 @@ jest.mock("@/lib/hooks/use-notifications", () => ({
   useNotifications: () => mockState,
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const NotificationBell = require("@/components/notification-bell").default;
 
 beforeEach(() => {

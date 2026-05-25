@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Task, User } from "@prisma/client";
 import { TaskCard } from "./task-card";
 import { TaskFilters } from "./task-filters";
@@ -9,6 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Download } from "lucide-react";
 import { TaskStatus, SortBy, Priority, DependencyWithPrerequisite } from "@/lib/types";
 import { exportTasksToCSV } from "@/lib/export";
+import type { Sprint } from "@/components/sprint/types";
 
 interface TaskBoardProps {
   tasks: (Task & {
@@ -22,6 +23,14 @@ export function TaskBoard({ tasks, projectId }: TaskBoardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isUpdating, setIsUpdating] = useState(false);
+  const [sprints, setSprints] = useState<Sprint[]>([]);
+  const [sprintUpdating, setSprintUpdating] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/sprints")
+      .then((r) => r.json())
+      .then((data) => setSprints(data.sprints ?? []));
+  }, []);
 
   const searchQuery = searchParams.get("q") ?? "";
   const statusFilter = (searchParams.get("status") ?? "") as TaskStatus | "";
@@ -90,6 +99,37 @@ export function TaskBoard({ tasks, projectId }: TaskBoardProps) {
 
   const handleClear = () => router.replace("?", { scroll: false });
 
+  const handleSprintChange = async (taskId: string, currentSprintId: string | null, newValue: string) => {
+    setSprintUpdating(taskId);
+    try {
+      if (newValue === "none") {
+        if (currentSprintId) {
+          await fetch(`/api/sprints/${currentSprintId}/tasks`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ taskId }),
+          });
+        }
+      } else {
+        if (currentSprintId && currentSprintId !== newValue) {
+          await fetch(`/api/sprints/${currentSprintId}/tasks`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ taskId }),
+          });
+        }
+        await fetch(`/api/sprints/${newValue}/tasks`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ taskId }),
+        });
+      }
+      router.refresh();
+    } finally {
+      setSprintUpdating(null);
+    }
+  };
+
   return (
     <div>
       <div className="flex flex-wrap items-start gap-3 mb-6">
@@ -109,7 +149,10 @@ export function TaskBoard({ tasks, projectId }: TaskBoardProps) {
           disabled={filteredTasks.length === 0}
           title={filteredTasks.length === 0 ? "No tasks to export" : undefined}
           onClick={() =>
-            exportTasksToCSV(filteredTasks, `tasks-${projectId}.csv`)
+            exportTasksToCSV(
+              filteredTasks.map((t) => ({ ...t, dependencies: t.dependencies ?? [] })),
+              `tasks-${projectId}.csv`
+            )
           }
         >
           <Download className="h-4 w-4 mr-2" />
@@ -128,6 +171,8 @@ export function TaskBoard({ tasks, projectId }: TaskBoardProps) {
               key={task.id}
               task={task}
               onClick={() => handleTaskClick(task.id)}
+              sprints={sprints}
+              onSprintChange={(val) => handleSprintChange(task.id, task.sprintId, val)}
             />
           ))}
           {todoTasks.length === 0 && (
@@ -151,6 +196,8 @@ export function TaskBoard({ tasks, projectId }: TaskBoardProps) {
               key={task.id}
               task={task}
               onClick={() => handleTaskClick(task.id)}
+              sprints={sprints}
+              onSprintChange={(val) => handleSprintChange(task.id, task.sprintId, val)}
             />
           ))}
           {inProgressTasks.length === 0 && (
@@ -172,6 +219,8 @@ export function TaskBoard({ tasks, projectId }: TaskBoardProps) {
               key={task.id}
               task={task}
               onClick={() => handleTaskClick(task.id)}
+              sprints={sprints}
+              onSprintChange={(val) => handleSprintChange(task.id, task.sprintId, val)}
             />
           ))}
           {doneTasks.length === 0 && (

@@ -20,7 +20,6 @@ jest.mock("@/lib/hooks/use-activity-feed", () => ({
   useActivityFeed: () => mockState,
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { ActivityFeed } = require("@/components/activity-feed");
 
 function makeEvent(id = "evt-1"): ActivityEventItem {

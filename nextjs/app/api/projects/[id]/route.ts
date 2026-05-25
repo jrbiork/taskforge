@@ -48,6 +48,9 @@ export async function GET(
                 dependsOn: { select: { id: true, title: true, status: true } },
               },
             },
+            timeEntries: {
+              select: { minutes: true },
+            },
           },
           orderBy: {
             createdAt: "desc",
@@ -61,7 +64,15 @@ export async function GET(
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
-    return NextResponse.json(project);
+    const projectWithTotals = {
+      ...project,
+      tasks: project.tasks.map(({ timeEntries, ...task }) => ({
+        ...task,
+        totalMinutes: timeEntries.reduce((sum, e) => sum + (e.minutes ?? 0), 0),
+      })),
+    };
+
+    return NextResponse.json(projectWithTotals);
   } catch (error) {
     return NextResponse.json(
       { error: "Internal server error" },
