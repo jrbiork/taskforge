@@ -1,0 +1,52 @@
+{
+  "current_stage": "complete",
+  "feature": "time-tracking",
+  "stages": [
+    {
+      "name": "spec",
+      "agent": "pm-spec",
+      "status": "completed",
+      "input": ".tasks/requests/time-tracking.md",
+      "output": ".tasks/specs/time-tracking.md"
+    },
+    {
+      "name": "review",
+      "agent": "architect-review",
+      "status": "completed",
+      "input": ".tasks/specs/time-tracking.md",
+      "output": ".tasks/reviews/time-tracking-review.md"
+    },
+    {
+      "name": "implement",
+      "agent": "implementer-tester",
+      "status": "completed",
+      "input": ".tasks/specs/time-tracking.md",
+      "output": "nextjs/components/**, nextjs/app/api/**"
+    },
+    {
+      "name": "validate",
+      "agent": "validator",
+      "status": "completed",
+      "input": "nextjs/**",
+      "output": ".tasks/reviews/time-tracking-validation.md"
+    }
+  ],
+  "history": [
+    {
+      "stage": "pm-spec",
+      "completed_at": "2026-05-22T08:21:54Z"
+    },
+    {
+      "stage": "architect-review",
+      "completed_at": "2026-05-22T08:24:47Z"
+    },
+    {
+      "stage": "implementer-tester",
+      "completed_at": "2026-05-22T08:47:36Z"
+    },
+    {
+      "stage": "validator",
+      "completed_at": "2026-05-22T17:15:33Z"
+    }
+  ]
+}

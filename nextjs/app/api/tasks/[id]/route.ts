@@ -15,6 +15,7 @@ const taskUpdateSchema = z.object({
   status: z.enum(["TODO", "IN_PROGRESS", "DONE"]).optional(),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
   assigneeId: z.string().nullable().optional(),
+  sprintId: z.string().nullable().optional(),
 });
 
 export async function GET(

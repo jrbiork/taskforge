@@ -1,6 +1,11 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 
+global.fetch = jest.fn().mockResolvedValue({
+  json: async () => ({ sprints: [] }),
+  ok: true,
+}) as jest.Mock;
+
 const mockReplace = jest.fn();
 const mockPush = jest.fn();
 const mockGet = jest.fn().mockReturnValue(null);

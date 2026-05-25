@@ -2,10 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CommentThread } from "@/components/comment-thread";
+import { TimeTracker } from "@/components/time-tracker";
+import { TimeEntryList } from "@/components/time-entry-list";
 import { ArrowLeft, Trash2, X, Plus, Lock } from "lucide-react";
 import Link from "next/link";
 import { TaskWithDetails, Task, TaskStatus, Priority } from "@/lib/types";
@@ -34,6 +37,7 @@ const statusColors: Record<string, string> = {
 export default function TaskDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { data: session } = useSession();
   const [task, setTask] = useState<TaskWithDetails | null>(null);
   const [projectTasks, setProjectTasks] = useState<Pick<Task, "id" | "title" | "status">[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -230,6 +234,9 @@ export default function TaskDetailPage() {
               )}
             </div>
             <p className="text-muted-foreground mt-1">{task.project.name}</p>
+            <div className="mt-2">
+              <TimeTracker taskId={params.taskId as string} />
+            </div>
           </div>
           <Button variant="destructive" size="icon" onClick={handleDelete}>
             <Trash2 className="h-4 w-4" />
@@ -365,6 +372,19 @@ export default function TaskDetailPage() {
                   )}
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Time Entries</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TimeEntryList
+                taskId={params.taskId as string}
+                currentUserId={session?.user?.id ?? ""}
+                currentUserRole={(session?.user?.role as "ADMIN" | "MEMBER" | "VIEWER") ?? "VIEWER"}
+              />
             </CardContent>
           </Card>
 
